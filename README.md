@@ -7,6 +7,10 @@ El resultado es una **API RESTful** que permite gestionar carritos de compra, pr
 - Finalizar o cancelar compras.
 - Consultar usuarios, pedidos y sus detalles asociados.
 
+Este proyecto es un rework mejorado de una versión anterior desarrollada también en Java, incorporando nuevas funcionalidades, una estructura más sólida y mejores prácticas de arquitectura:
+
+[👉 Ver proyecto anterior](https://github.com/Espectro0/shoppingCart)
+
 ---
 
 ## Diagrama UML
