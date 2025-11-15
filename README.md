@@ -102,6 +102,8 @@ CREATE TABLE order_items (
 
 El servidor se levantará por defecto en el puerto `8080`.
 
+_**DISCLAIMER: Este código puede contener errores, ya que es un proyecto de aprendizaje para la universidad.**_
+
 ---
 
 ## Tecnologías
