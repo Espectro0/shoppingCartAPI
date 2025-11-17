@@ -1,5 +1,8 @@
 package co.com.store.shoppingCartAPI.service.order;
 
+import co.com.store.shoppingCartAPI.controller.exception.BadRequestException;
+import co.com.store.shoppingCartAPI.controller.exception.ConflictException;
+import co.com.store.shoppingCartAPI.controller.exception.ResourceNotFoundException;
 import co.com.store.shoppingCartAPI.model.Order;
 import co.com.store.shoppingCartAPI.model.OrderItem;
 import co.com.store.shoppingCartAPI.model.Product;
@@ -73,9 +76,9 @@ public class MySQLOrderService implements OrderRepository {
             Boolean checkedOut;
 
             switch (normalizedStatus) {
-                case "open" -> checkedOut = false;
-                case "closed" -> checkedOut = true;
-                default -> throw new IllegalArgumentException("Invalid status: " + status);
+                case "open", "abierto" -> checkedOut = false;
+                case "closed", "cerrado" -> checkedOut = true;
+                default -> throw new BadRequestException("Invalid status: " + status);
             }
 
             return OrderEntity.toModelList(orders.stream()
@@ -90,10 +93,10 @@ public class MySQLOrderService implements OrderRepository {
         userService.getUserById(userId);
 
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order with id "+ orderId + " not found for user "+ userId +" ."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id "+ orderId + " not found for user "+ userId +" ."));
 
         if (!order.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Order with id "+ orderId + " not found for user "+ userId +" .");
+            throw new ResourceNotFoundException("Order with id "+ orderId + " not found for user "+ userId +" .");
         }
 
         return OrderEntity.toModel(order);
@@ -106,17 +109,17 @@ public class MySQLOrderService implements OrderRepository {
         validateStock(productId, quantity);
 
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order with id " + orderId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id " + orderId + " not found."));
 
         if (!order.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Order with id " + orderId + " not found for user " + userId + ".");
+            throw new ResourceNotFoundException("Order with id " + orderId + " not found for user " + userId + ".");
         }
 
         validateOrder(orderId);
 
         if (order.getOrderItems().stream()
                 .anyMatch(item -> item.getProduct().getId().equals(productId))) {
-            throw new IllegalArgumentException("Product with id " + productId + " already in order " + orderId + ".");
+            throw new ConflictException("Product with id " + productId + " already in order " + orderId + ".");
         }
 
         Product product = productService.findProductById(productId);
@@ -142,17 +145,17 @@ public class MySQLOrderService implements OrderRepository {
     public void updateProductQuantity(String userId, String orderId, String productId, Integer quantity) {
 
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order with id " + orderId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id " + orderId + " not found."));
         validateOrder(orderId);
 
         if (!order.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Order with id " + orderId + " not found for user " + userId + ".");
+            throw new ResourceNotFoundException("Order with id " + orderId + " not found for user " + userId + ".");
         }
 
         OrderItemEntity item = order.getOrderItems().stream()
                 .filter(i -> i.getProduct().getId().equals(productId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Product with id " + productId + " not found in order " + orderId + "."));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + productId + " not found in order " + orderId + "."));
 
         Product product = productService.findProductById(productId);
 
@@ -182,17 +185,17 @@ public class MySQLOrderService implements OrderRepository {
     public void removeProductFromOrder(String userId, String orderId, String productId) {
 
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order with id " + orderId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id " + orderId + " not found."));
         validateOrder(orderId);
 
         if (!order.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Order with id " + orderId + " not found for user " + userId + ".");
+            throw new ResourceNotFoundException("Order with id " + orderId + " not found for user " + userId + ".");
         }
 
         OrderItemEntity item = order.getOrderItems().stream()
                 .filter(i -> i.getProduct().getId().equals(productId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Product with id " + productId + " not found in order " + orderId + "."));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + productId + " not found in order " + orderId + "."));
 
         Product product = productService.findProductById(productId);
 
@@ -210,16 +213,16 @@ public class MySQLOrderService implements OrderRepository {
     public Order checkoutOrder(String userId, String orderId) {
 
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order with id " + orderId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id " + orderId + " not found."));
 
         validateOrder(orderId);
 
         if (!order.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Order with id " + orderId + " not found for user " + userId + ".");
+            throw new ResourceNotFoundException("Order with id " + orderId + " not found for user " + userId + ".");
         }
 
         if (order.getOrderItems().isEmpty()) {
-            throw new IllegalArgumentException("Cannot checkout an empty order.");
+            throw new BadRequestException("Cannot checkout an empty order.");
         }
 
         double total = order.getTotal();
@@ -250,10 +253,10 @@ public class MySQLOrderService implements OrderRepository {
 
     private void validateOrder(String orderId) {
         OrderEntity orderEntity = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order with id " + orderId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order with id " + orderId + " not found."));
 
         if (orderEntity.getIsCheckedOut()) {
-            throw new IllegalArgumentException("Order is already checked out.");
+            throw new ConflictException("Order is already checked out.");
         }
     }
 
@@ -261,11 +264,11 @@ public class MySQLOrderService implements OrderRepository {
         Product product = productService.findProductById(productId);
 
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0.");
+            throw new BadRequestException("Quantity must be greater than 0.");
         }
 
         if (product.getStock() < quantity) {
-            throw new IllegalArgumentException("Not enough stock for product " + product.getName() + ".");
+            throw new BadRequestException("Not enough stock for product " + product.getName() + ".");
         }
     }
 }

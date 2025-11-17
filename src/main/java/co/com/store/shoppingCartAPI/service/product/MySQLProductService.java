@@ -1,5 +1,8 @@
 package co.com.store.shoppingCartAPI.service.product;
 
+import co.com.store.shoppingCartAPI.controller.exception.BadRequestException;
+import co.com.store.shoppingCartAPI.controller.exception.ConflictException;
+import co.com.store.shoppingCartAPI.controller.exception.ResourceNotFoundException;
 import co.com.store.shoppingCartAPI.model.Product;
 import co.com.store.shoppingCartAPI.service.product.datarepository.SpringDataProductRepository;
 import co.com.store.shoppingCartAPI.service.product.entity.ProductEntity;
@@ -30,7 +33,7 @@ public class MySQLProductService implements ProductRepository {
     public Product findProductById(String id) {
         return ProductEntity.toModel(
                 productRepository.findById(id)
-                        .orElseThrow(() -> new IllegalArgumentException("Product with id " + id + " not found.")
+                        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found.")
         ));
     }
 
@@ -39,7 +42,7 @@ public class MySQLProductService implements ProductRepository {
         product.setId(UUID.randomUUID().toString());
 
         if (productRepository.existsById(product.getId()) || productRepository.existsByName(product.getName())) {
-            throw new IllegalArgumentException("This product already exists in the database.");
+            throw new ConflictException("A product with the same name already exists.");
         }
 
         productRepository.save(ProductEntity.fromModel(product));
@@ -50,7 +53,7 @@ public class MySQLProductService implements ProductRepository {
     @Override
     public void deleteProduct(String id) {
         ProductEntity productToDelete = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product with id " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found."));
 
         productRepository.delete(productToDelete);
     }
@@ -58,7 +61,11 @@ public class MySQLProductService implements ProductRepository {
     @Override
     public void updateStock(String id, Integer quantity) {
         if (quantity < 0) {
-            throw new IllegalArgumentException("Stock quantity can't be negative.");
+            throw new BadRequestException("Stock quantity can't be negative.");
+        }
+
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product with id " + id + " not found.");
         }
 
         productRepository.updateStockById(id, quantity);
