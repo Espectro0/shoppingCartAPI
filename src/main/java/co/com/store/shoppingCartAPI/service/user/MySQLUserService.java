@@ -1,5 +1,7 @@
 package co.com.store.shoppingCartAPI.service.user;
 
+import co.com.store.shoppingCartAPI.controller.exception.ConflictException;
+import co.com.store.shoppingCartAPI.controller.exception.ResourceNotFoundException;
 import co.com.store.shoppingCartAPI.model.User;
 import co.com.store.shoppingCartAPI.service.user.datarepository.SpringDataUserRepository;
 import co.com.store.shoppingCartAPI.service.user.entity.UserEntity;
@@ -25,7 +27,7 @@ public class MySQLUserService implements UserRepository {
     public User getUserById(String userId) {
         return UserEntity.toModel(
                 userRepository.findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("User with id " + userId + " not found.")));
+                        .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found.")));
     }
 
     @Override
@@ -33,7 +35,7 @@ public class MySQLUserService implements UserRepository {
         user.setId(UUID.randomUUID().toString());
 
         if (userRepository.existsById(user.getId()) || userRepository.existsByEmail(user.getEmail()) || userRepository.existsByName(user.getName())) {
-            throw new IllegalArgumentException("This user already exists in the database.");
+            throw new ConflictException("This user already exists in the database.");
         }
 
         userRepository.save(UserEntity.fromModel(user));
@@ -43,7 +45,7 @@ public class MySQLUserService implements UserRepository {
     @Override
     public User updateUser(String userId, User user) {
         UserEntity existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User with id " + userId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found."));
 
         existingUser.setName(user.getName());
         existingUser.setEmail(user.getEmail());
@@ -56,7 +58,7 @@ public class MySQLUserService implements UserRepository {
     @Override
     public void deleteUser(String userId) {
         UserEntity userToDelete = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User with id " + userId + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + userId + " not found."));
 
         userRepository.delete(userToDelete);
     }

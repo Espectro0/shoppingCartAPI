@@ -41,6 +41,33 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Maneja las excepciones cuando un producto no es encontrado "Not Found"
+     */
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    /**
+     * Maneja las excepciones "Bad Request"
+     */
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
+     * Maneja las excepciones "Conflict"
+     */
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /**
      * Maneja cuando un parámetro obligatorio del request falta.
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -59,7 +86,7 @@ public class GlobalExceptionHandler {
                 ex.getName(),
                 ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown"
         );
-        return buildError(HttpStatus.BAD_REQUEST, message);
+        return buildError(HttpStatus.NOT_FOUND, message);
     }
 
     /**
@@ -82,7 +109,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Contryye una respuesta de error con la fecha, el status, error y mensaje.
+     * Contruye una respuesta de error con la fecha, el status, error y mensaje.
      */
 
     private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message) {
